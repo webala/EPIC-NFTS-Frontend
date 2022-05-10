@@ -1,6 +1,8 @@
 import './styles/App.css';
 import twitterLogo from './assets/twitter-logo.svg';
 import React, {useEffect, useState} from "react";
+import { ethers } from 'ethers';
+import myEpicNft from './utils/EpicNfts.json'
 
 // Constants
 const TWITTER_HANDLE = '_buildspace';
@@ -12,6 +14,7 @@ const App = () => {
 
   const [currentAccount, setCurrentAccount] = useState()
 
+  //function to get ethereum object
   const getEthereum = () => {
     try {
       const {ethereum} = window
@@ -26,6 +29,7 @@ const App = () => {
     }
   }
 
+  //function to check if wallet is connected and if there is an authorised account
   const checkIfWalletIsConnected = async () => {
    
     if (!getEthereum) {
@@ -44,6 +48,8 @@ const App = () => {
     }
   }
 
+
+  //function to connect wallet to website
   const connectWallet = async () => {
     console.log('Connect wallet called')
     if (!getEthereum) {
@@ -55,6 +61,33 @@ const App = () => {
 
     console.log('Connected', accounts[0])
     setCurrentAccount(accounts[0])
+  }
+
+  //function to ask contract to mint NFT
+  const askContractToMintNft = async () => {
+    console.log('mint function called')
+    const CONTRACT_ADDRESS = '0xED67b710B58912D1BbF696e43AD65D828bEB4Fc5'
+
+    const ethereum = getEthereum()
+
+    if (ethereum) {
+      const provider = new ethers.providers.Web3Provider(ethereum)
+      const signer = provider.getSigner()
+      console.log(signer)
+
+      const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, myEpicNft.abi, signer)
+
+      console.log('Going to pop wallet to pay gas')
+      let nftTxn = await connectedContract.makeAnEpicNFT()
+
+      console.log('Mining...Please wait.')
+      await nftTxn.wait()
+
+      console.log(`Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`)
+    }
+    else {
+      console.log('Ethtereum object does not exist')
+    }
   }
 
   // Render Methods
@@ -72,11 +105,13 @@ const App = () => {
     <div className="App">
       <div className="container">
         <div className="header-container">
-          <p className="header gradient-text">My NFT Collection</p>
+          <p className="header gradient-text">BallersCars&Food NFT Collection</p>
           <p className="sub-text">
             Each unique. Each beautiful. Discover your NFT today.
           </p>
-          {renderNotConnectedContainer()}
+          {currentAccount === ''?  renderNotConnectedContainer(): (
+            <button onClick={askContractToMintNft} className='cta-button connect-wallet-button'>Mint NFT</button>
+          )}
         </div>
         <div className="footer-container">
           <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
